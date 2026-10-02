@@ -13,12 +13,12 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "environment": "preview",
-      "env": { "EXPO_PUBLIC_API_URL": "https://rede-comunidade-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://rede-comunidade-api-yb1n.onrender.com" }
     },
     "production": {
       "autoIncrement": true,
       "environment": "production",
-      "env": { "EXPO_PUBLIC_API_URL": "https://rede-comunidade-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://rede-comunidade-api-yb1n.onrender.com" }
     }
   },
   "submit": {
