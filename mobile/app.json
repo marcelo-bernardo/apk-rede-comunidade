@@ -28,7 +28,13 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O Rede Comunidade usa sua localização para posicionar você no mapa e registrar rotas e alertas do seu entorno."
+        }
+      ]
     ],
     "scheme": "rede-comunidade"
   }
