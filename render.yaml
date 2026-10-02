@@ -3,19 +3,15 @@
 services:
   - type: web
     name: rede-comunidade-api
-    runtime: node
+    runtime: docker
     rootDir: backend
+    # Caminhos relativos ao rootDir: usa backend/Dockerfile com backend/ como contexto.
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     region: virginia # mesma região do banco no Neon (AWS us-east-1)
     plan: free
-    # --include=dev: com NODE_ENV=production o npm pularia o TypeScript, necessário no build.
-    buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm start
     healthCheckPath: /health
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NODE_VERSION
-        value: "22"
       - key: JWT_SECRET
         generateValue: true
       # Connection string do Neon (com ?sslmode=require). Pedida na criação do Blueprint.
