@@ -366,15 +366,18 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={[s.adminCard, { marginTop: 12 * scale, padding: 12 * scale }]}>
-          <View style={[s.adminHeader, { gap: 6 * scale }]}>
-            <IconeChave cor="#9ca3af" tamanho={12 * scale} />
-            <Text style={[s.adminTitulo, { fontSize: 11 * fontScale }]}>Acesso da Presidente (Admin)</Text>
+        {/* Credenciais de teste: só em desenvolvimento, nunca no APK. */}
+        {__DEV__ && (
+          <View style={[s.adminCard, { marginTop: 12 * scale, padding: 12 * scale }]}>
+            <View style={[s.adminHeader, { gap: 6 * scale }]}>
+              <IconeChave cor="#9ca3af" tamanho={12 * scale} />
+              <Text style={[s.adminTitulo, { fontSize: 11 * fontScale }]}>Acesso da Presidente (Admin)</Text>
+            </View>
+            <View style={[s.adminLinha, { marginVertical: 6 * scale }]} />
+            <Text style={[s.adminInfo, { fontSize: 10 * fontScale }]}>CPF: 000.000.000-00</Text>
+            <Text style={[s.adminInfo, { fontSize: 10 * fontScale }]}>Senha: admin123</Text>
           </View>
-          <View style={[s.adminLinha, { marginVertical: 6 * scale }]} />
-          <Text style={[s.adminInfo, { fontSize: 10 * fontScale }]}>CPF: 000.000.000-00</Text>
-          <Text style={[s.adminInfo, { fontSize: 10 * fontScale }]}>Senha: admin123</Text>
-        </View>
+        )}
 
         <Text style={[s.footer, { fontSize: 10 * fontScale, marginTop: 8 * scale }]}>v1.0.0 · Rede Comunidade</Text>
       </View>

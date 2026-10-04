@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ecfdf5"
+        "backgroundColor": "#059669"
       },
       "package": "com.afavorita.redecomunidade"
     },
