@@ -7,6 +7,7 @@ import {
   Modal as RNModal,
   ScrollView,
   StyleSheet,
+  type StyleProp,
   type ViewStyle,
   type TextStyle,
 } from 'react-native'
@@ -55,7 +56,7 @@ export function Card({
   style,
 }: {
   children: React.ReactNode
-  style?: ViewStyle
+  style?: StyleProp<ViewStyle>
 }) {
   return <View style={[s.card, style]}>{children}</View>
 }

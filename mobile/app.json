@@ -36,7 +36,8 @@
         {
           "locationWhenInUsePermission": "O Rede Comunidade usa sua localização para posicionar você no mapa e registrar rotas e alertas do seu entorno."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "scheme": "rede-comunidade",
     "extra": {
