@@ -8,7 +8,12 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native'
-import MapView, { Marker, Polyline, Callout } from 'react-native-maps'
+import {
+  MapaLeaflet,
+  type MapaLeafletHandle,
+  type LinhaMapa,
+  type PinoMapa,
+} from '../../src/components/MapaLeaflet'
 import * as Location from 'expo-location'
 import { useApp } from '../../src/store/AppStore'
 import { useAuth } from '../../src/store/AuthStore'
@@ -61,7 +66,8 @@ export default function Mapa() {
   const { rotas, alertas, comercios, usuario } = estado
   const meuId = authUsuario?.id ?? ''
 
-  const mapRef = useRef<MapView>(null)
+  const mapRef = useRef<MapaLeafletHandle>(null)
+  const [minhaPosicao, setMinhaPosicao] = useState<LatLng | null>(null)
   const [modo, setModo] = useState<ModoMapa>('navegar')
   const [rascunho, setRascunho] = useState<LatLng[]>([])
   const [pontoAlerta, setPontoAlerta] = useState<LatLng | null>(null)
@@ -102,24 +108,69 @@ export default function Mapa() {
     })
   }, [alertas, mostrarResolvidos])
 
+  const linhas = useMemo<LinhaMapa[]>(
+    () =>
+      rotasFiltradas.map((r) => ({
+        id: r.id,
+        pontos: r.pontos,
+        cor: corDaCondicao(r.condicao),
+        tracejada: r.status === 'pendente',
+      })),
+    [rotasFiltradas],
+  )
+
+  const pinos = useMemo<PinoMapa[]>(() => {
+    const lista: PinoMapa[] = alertasFiltrados.map((a) => ({
+      id: a.id,
+      ponto: a.ponto,
+      cor: CORES_GRAVIDADE[a.gravidade],
+      titulo: a.tipo,
+      subtitulo: `Gravidade: ${a.gravidade}`,
+      detalhes: true,
+    }))
+    for (const c of comercios) {
+      if (!c.ponto) continue
+      lista.push({ id: `comercio-${c.id}`, ponto: c.ponto, cor: '#7c3aed', titulo: c.nome, subtitulo: c.categoria })
+    }
+    if (pontoAlerta) {
+      lista.push({ id: 'alerta-novo', ponto: pontoAlerta, cor: '#dc2626', titulo: 'Novo alerta' })
+    }
+    return lista
+  }, [alertasFiltrados, comercios, pontoAlerta])
+
   useEffect(() => {
     ;(async () => {
-      const { status } = await Location.getForegroundPermissionsAsync()
+      let { status } = await Location.getForegroundPermissionsAsync()
       if (status === 'undetermined') {
-        await Location.requestForegroundPermissionsAsync()
+        status = (await Location.requestForegroundPermissionsAsync()).status
+      }
+      if (status !== 'granted') return
+      try {
+        const loc = await Location.getLastKnownPositionAsync()
+        if (loc) setMinhaPosicao({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+      } catch {
+        // Sem posição conhecida: o usuário pode tocar em 📍.
       }
     })()
   }, [])
 
-  function handleMapPress(e: { nativeEvent: { coordinate: LatLng } }) {
-    const coord = e.nativeEvent.coordinate
-
+  function handleMapPress(coord: LatLng) {
     if (modo === 'desenhar') {
-      setRascunho((prev) => [...prev, { lat: coord.latitude, lng: coord.longitude }])
+      setRascunho((prev) => [...prev, coord])
     } else if (modo === 'alerta') {
-      setPontoAlerta({ lat: coord.latitude, lng: coord.longitude })
+      setPontoAlerta(coord)
       setModalAlerta(true)
     }
+  }
+
+  function abrirRota(id: string) {
+    const r = rotas.find((x) => x.id === id)
+    if (r) setRotaDetalhe(r)
+  }
+
+  function abrirAlerta(id: string) {
+    const a = alertas.find((x) => x.id === id)
+    if (a) setAlertaDetalhe(a)
   }
 
   async function salvarRota() {
@@ -195,12 +246,9 @@ export default function Mapa() {
         return
       }
       const location = await Location.getCurrentPositionAsync({})
-      mapRef.current?.animateToRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      })
+      const p = { lat: location.coords.latitude, lng: location.coords.longitude }
+      setMinhaPosicao(p)
+      mapRef.current?.centralizar(p)
     } catch {
       Alert.alert('Erro', 'Não foi possível obter sua localização.')
     }
@@ -258,92 +306,17 @@ export default function Mapa() {
       </View>
 
       {/* Mapa */}
-      <MapView
+      <MapaLeaflet
         ref={mapRef}
-        style={s.map}
-        initialRegion={{
-          latitude: CENTRO_PADRAO.lat,
-          longitude: CENTRO_PADRAO.lng,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        onPress={handleMapPress}
-        showsUserLocation
-      >
-        {/* Rotas */}
-        {rotasFiltradas.map((r) => (
-          <Polyline
-            key={r.id}
-            coordinates={r.pontos.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            }))}
-            strokeColor={corDaCondicao(r.condicao)}
-            strokeWidth={3}
-            lineDashPattern={r.status === 'pendente' ? [5, 5] : undefined}
-          />
-        ))}
-
-        {/* Rascunho */}
-        {rascunho.length > 0 && (
-          <Polyline
-            coordinates={rascunho.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            }))}
-            strokeColor="#2563eb"
-            strokeWidth={3}
-          />
-        )}
-
-        {/* Alertas */}
-        {alertasFiltrados.map((a) => (
-          <Marker
-            key={a.id}
-            coordinate={{ latitude: a.ponto.lat, longitude: a.ponto.lng }}
-            pinColor={CORES_GRAVIDADE[a.gravidade]}
-          >
-            <Callout onPress={() => setAlertaDetalhe(a)}>
-              <View style={s.callout}>
-                <Text style={s.calloutTitle}>{a.tipo}</Text>
-                <Text style={s.calloutSub}>Gravidade: {a.gravidade}</Text>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
-
-        {/* Comércios */}
-        {comercios
-          .filter((c) => c.ponto)
-          .map((c) => (
-            <Marker
-              key={c.id}
-              coordinate={{
-                latitude: c.ponto!.lat,
-                longitude: c.ponto!.lng,
-              }}
-              pinColor="#7c3aed"
-            >
-              <Callout>
-                <View style={s.callout}>
-                  <Text style={s.calloutTitle}>{c.nome}</Text>
-                  <Text style={s.calloutSub}>{c.categoria}</Text>
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-
-        {/* Marcador de alerta pendente */}
-        {pontoAlerta && (
-          <Marker
-            coordinate={{
-              latitude: pontoAlerta.lat,
-              longitude: pontoAlerta.lng,
-            }}
-            pinColor="#dc2626"
-          />
-        )}
-      </MapView>
+        centro={CENTRO_PADRAO}
+        linhas={linhas}
+        pinos={pinos}
+        rascunho={rascunho}
+        usuario={minhaPosicao}
+        onToque={handleMapPress}
+        onLinha={abrirRota}
+        onPino={abrirAlerta}
+      />
 
       {/* Botão centralizar localização */}
       <TouchableOpacity style={s.locationBtn} onPress={centralizarLocalizacao}>
@@ -563,7 +536,6 @@ const s = StyleSheet.create({
   modeBtnAlerta: { backgroundColor: '#fef2f2', borderColor: '#fca5a5' },
   modeText: { fontSize: 13, color: '#475569', fontWeight: '500' },
   modeTextAtivo: { color: '#065f46', fontWeight: '700' },
-  map: { flex: 1 },
   locationBtn: {
     position: 'absolute',
     top: 16,
@@ -651,9 +623,6 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   limparBtnText: { color: '#991b1b', fontSize: 13, fontWeight: '600' },
-  callout: { padding: 4, minWidth: 120 },
-  calloutTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  calloutSub: { fontSize: 12, color: '#64748b' },
   detailText: { fontSize: 14, color: '#334155', marginVertical: 8, lineHeight: 20 },
   detailMeta: { fontSize: 12, color: '#64748b', marginBottom: 4 },
   detailActions: { flexDirection: 'row', gap: 8, marginTop: 12 },

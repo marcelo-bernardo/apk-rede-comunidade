@@ -38,6 +38,12 @@
         }
       ]
     ],
-    "scheme": "rede-comunidade"
+    "scheme": "rede-comunidade",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a5764abb-d396-4aa7-9537-f7c18209d57a"
+      }
+    }
   }
 }
